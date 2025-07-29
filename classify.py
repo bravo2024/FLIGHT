@@ -15,8 +15,8 @@ from sklearn.preprocessing import StandardScaler
 
 
 
-client_id =st.secrets("AMADEUS_CLIENT_ID")
-client_secret =st.secrets("AMADEUS_CLIENT_SECRET")
+client_id =st.secrets["AMADEUS_CLIENT_ID"]
+client_secret =st.secrets["AMADEUS_CLIENT_SECRET"]
 # Initialize Amadeus
 try:
     amadeus = Client(client_id=client_id, client_secret=client_secret)
