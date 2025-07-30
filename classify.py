@@ -141,13 +141,15 @@ with tab3:
     st.subheader("✈️ Flight Classification: Cheaper or Costlier")
     col1, col2, col3 = st.columns(3)
     with col1:
-        from_city3 = st.selectbox("From", list(city_codes.keys()), key="from3")
+        from_city3 = st.selectbox("From", list(city_codes.keys()),index=list(city_codes.keys()).index("Kolkata"), key="from3")
     with col2:
-        to_city3 = st.selectbox("To", list(city_codes.keys()), index=1, key="to3")
+        to_city3 = st.selectbox("To", list(city_codes.keys()), index=list(city_codes.keys()).index("Bangalore"), key="to3")
     with col3:
-        flight_date3 = st.date_input("Departure Date", datetime.today(), key="date3")
+        flight_date3 = st.date_input("Departure Date", datetime.today()+ timedelta(days=1), key="date3")
 
-    future_days = st.slider("Select number of future days to simulate:", 1, 35, 3)
+    future_days = st.slider("Select number of future days to Predict:", 1, 90, 30)
+
+    #future_days = st.slider("Select number of future days to simulate:", 1, 35, 3)
 
     if st.button("Classify Flights", key="classify3"):
         flights3 = get_flight_data(city_codes[from_city3], city_codes[to_city3], flight_date3)
