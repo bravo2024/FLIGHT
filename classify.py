@@ -61,8 +61,8 @@ def get_flight_data(origin, destination, date):
         return []
 
 # App UI
-st.set_page_config("Flight Price Classifier", layout="wide")
-st.title("✈️ Flight Price Tracker, Predictor & Classifier")
+st.set_page_config("VIVEK Flight Price Classifier", layout="wide")
+st.title("✈️ VIVEK'S Flight Price Tracker & Classifier")
 
 tab1, tab2, tab3 = st.tabs(["🔍 Live Flights", "📈 Predict Price", "🧠 Classify Cheaper/Costlier"])
 
