@@ -1,6 +1,7 @@
 # ✈️ Dynamic Flight Price Classifier
 
-[Text to Display](https://flightpriceclassify.streamlit.app/)
+[LIVE APP RUN](https://flightpriceclassify.streamlit.app/)
+
 A Streamlit app that **tracks live flight prices** and classifies flights as **Cheaper or Costlier** using **Logistic Regression**.  
 Built with the **Amadeus API** and `pandas`, `scikit-learn`, `seaborn`.
 
