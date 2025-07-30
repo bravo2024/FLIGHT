@@ -26,7 +26,7 @@ Built with the **Amadeus API** and `pandas`, `scikit-learn`, `seaborn`.
 ## ⚡ Quickstart
 ```bash
 # Clone
-git clone https://github.com/<your-username>/FLIGHT.git
+git clone https://github.com/bravo2024/FLIGHT.git
 cd FLIGHT
 
 # Create virtualenv (optional)
