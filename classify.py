@@ -204,10 +204,25 @@ with tab3:
             test_results["Correct"] = test_results["Classification"] == test_results["Expected Class"]
             incorrect = test_results[~test_results["Correct"]]
 
-            st.metric("Accuracy", f"{accuracy_score(y_test_cls, y_pred_cls)*100:.2f}%")
-            st.markdown("### 📊 Classification Report")
-            st.text(classification_report(y_test_cls, y_pred_cls, target_names=["Cheaper", "Costlier"]))
-
+            # Formatted performance metrics
+            accuracy = accuracy_score(y_test_cls, y_pred_cls) * 100
+            class_report = classification_report(y_test_cls, y_pred_cls, target_names=["Cheaper", "Costlier"], output_dict=True)
+            cm = confusion_matrix(y_test_cls, y_pred_cls)
+            st.markdown("### 📊 Performance Metrics")
+            st.markdown(f"""
+            - **Accuracy**: {accuracy:.2f}%
+            - **Precision (Cheaper)**: {class_report['Cheaper']['precision']:.3f}
+            - **Recall (Cheaper)**: {class_report['Cheaper']['recall']:.3f}
+            - **F1-Score (Cheaper)**: {class_report['Cheaper']['f1-score']:.3f}
+            - **Precision (Costlier)**: {class_report['Costlier']['precision']:.3f}
+            - **Recall (Costlier)**: {class_report['Costlier']['recall']:.3f}
+            - **F1-Score (Costlier)**: {class_report['Costlier']['f1-score']:.3f}
+            - **Confusion Matrix**:
+              - True Negatives (Cheaper, Cheaper): {cm[0][0]}
+              - False Positives (Cheaper, Costlier): {cm[0][1]}
+              - False Negatives (Costlier, Cheaper): {cm[1][0]}
+              - True Positives (Costlier, Costlier): {cm[1][1]}
+            """)
             st.markdown("### 🔍 Feature Weights (Scaled Features)")
             st.table(pd.DataFrame({"Feature": features, "Weight": clf.coef_[0]}))
 
