@@ -1,3 +1,4 @@
+![Banner](DOCS/fl.png)
 # ✈️ Dynamic Flight Price Classifier
 
 [LIVE APP RUN](https://flightpriceclassify.streamlit.app/)
