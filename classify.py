@@ -169,14 +169,14 @@ with tab3:
 
             # Calculate duration in minutes
             df_class["Duration"] = (pd.to_datetime(df_class["Arrival Time"]) - pd.to_datetime(df_class["Departure Time"])).dt.total_seconds() / 60.0
-
+            df_class["AirlineCode"] = LabelEncoder().fit_transform(df_class["Airline"])
             # Classification label based on median price
             price_threshold = df_class["Price"].median()
             df_class["Class"] = (df_class["Price"] > price_threshold).astype(int)
 
             st.markdown(f"Flights above ₹{price_threshold:.2f} are classified as **Costlier**.")
 
-            features = ["Hour", "Day", "Duration"]
+            features = ["Hour", "Day", "Duration", "AirlineCode"]
             X_cls = df_class[features]
             y_cls = df_class["Class"]
 
