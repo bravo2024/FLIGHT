@@ -25,11 +25,29 @@ except Exception as e:
     amadeus = None
 
 # City to IATA mapping
+#city_codes = {
+ #   "Delhi": "DEL", "Mumbai": "BOM", "Bangalore": "BLR",
+  #  "Chennai": "MAA", "Hyderabad": "HYD", "Kolkata": "CCU",
+  #  "Goa": "GOI", "Ahmedabad": "AMD"
+#}
+# City to IATA mapping (expanded for India)
 city_codes = {
     "Delhi": "DEL", "Mumbai": "BOM", "Bangalore": "BLR",
     "Chennai": "MAA", "Hyderabad": "HYD", "Kolkata": "CCU",
-    "Goa": "GOI", "Ahmedabad": "AMD"
+    "Goa (Dabolim)": "GOI", "Goa (Mopa)": "GOX", "Ahmedabad": "AMD",
+    "Pune": "PNQ", "Jaipur": "JAI", "Lucknow": "LKO",
+    "Amritsar": "ATQ", "Chandigarh": "IXC", "Guwahati": "GAU",
+    "Patna": "PAT", "Indore": "IDR", "Bhopal": "BHO",
+    "Nagpur": "NAG", "Varanasi": "VNS", "Ranchi": "IXR",
+    "Bhubaneswar": "BBI", "Raipur": "RPR", "Surat": "STV",
+    "Srinagar": "SXR", "Kochi": "COK", "Trivandrum": "TRV",
+    "Madurai": "IXM", "Coimbatore": "CJB", "Mangalore": "IXE",
+    "Visakhapatnam": "VTZ", "Agartala": "IXA", "Dehradun": "DED",
+    "Port Blair": "IXZ", "Leh": "IXL", "Tirupati": "TIR"
 }
+
+
+
 
 @st.cache_data(ttl=3600)
 def get_flight_data(origin, destination, date):
