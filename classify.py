@@ -101,7 +101,7 @@ st.set_page_config("VIVEK Flight Price Classifier", layout="wide")
 st.title("✈️ VIVEK'S Flight Price Tracker & Classifier")
 
 #tab1, tab2, tab3 = st.tabs(["🔍 Live Flights", "📈 Predict Price", "🧠 Classify Cheaper/Costlier"])
-tab3, tab1,tab2 = st.tabs(["🧠 Classify Cheaper/Costlier","🔍 Live Flights" ])
+tab3, tab1,tab2 = st.tabs(["🧠 Classify Cheaper/Costlier","🔍 Live Flights","📈 Predict Price" ])
 # --- Tab 1: Live Flights ---
 with tab1:
     st.subheader("Search Flights")
