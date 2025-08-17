@@ -100,8 +100,8 @@ def get_flight_data(origin, destination, date):
 st.set_page_config("VIVEK Flight Price Classifier", layout="wide")
 st.title("✈️ VIVEK'S Flight Price Tracker & Classifier")
 
-tab1, tab2, tab3 = st.tabs(["🔍 Live Flights", "📈 Predict Price", "🧠 Classify Cheaper/Costlier"])
-
+#tab1, tab2, tab3 = st.tabs(["🔍 Live Flights", "📈 Predict Price", "🧠 Classify Cheaper/Costlier"])
+tab3, tab1 = st.tabs(["🧠 Classify Cheaper/Costlier","🔍 Live Flights" ])
 # --- Tab 1: Live Flights ---
 with tab1:
     st.subheader("Search Flights")
