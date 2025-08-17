@@ -46,8 +46,20 @@ city_codes = {
     "Port Blair": "IXZ", "Leh": "IXL", "Tirupati": "TIR"
 }
 
+# Duration calculation functions
+def calculate_duration(dep_time_str, arr_time_str):
+    dep_time = pd.to_datetime(dep_time_str)
+    arr_time = pd.to_datetime(arr_time_str)
+    # Handle next-day arrivals
+    if arr_time < dep_time:
+        arr_time += timedelta(days=1)
+    duration_min = (arr_time - dep_time).total_seconds() / 60
+    return duration_min
 
-
+def format_duration(minutes):
+    hours = int(minutes // 60)
+    mins = int(minutes % 60)
+    return f"{hours}h {mins}m"
 
 @st.cache_data(ttl=3600)
 def get_flight_data(origin, destination, date):
@@ -62,15 +74,21 @@ def get_flight_data(origin, destination, date):
         )
         results = []
         for flight in response.data:
-            itinerary = flight["itineraries"][0]["segments"][0]
+            itinerary = flight["itineraries"][0]["segments"]
+            dep_time = itinerary[0]["departure"]["at"]
+            arr_time = itinerary[-1]["arrival"]["at"]
+            airline = f"{itinerary[0]['carrierCode']} {itinerary[0]['number']}"
             price_inr = float(flight["price"]["total"]) * 83
+            duration_min = calculate_duration(dep_time, arr_time)
             results.append({
-                "Airline": f"{itinerary['carrierCode']} {itinerary['number']}",
-                "Departure Time": itinerary["departure"]["at"],
-                "Arrival Time": itinerary["arrival"]["at"],
+                "Airline": airline,
+                "Departure Time": dep_time,
+                "Arrival Time": arr_time,
                 "From": origin,
                 "To": destination,
                 "Price": price_inr,
+                "Duration_Min": duration_min,
+                "Duration": format_duration(duration_min),
                 "Raw JSON": flight
             })
         return results
@@ -78,12 +96,13 @@ def get_flight_data(origin, destination, date):
         st.error(f"API error: {e}")
         return []
 
-# App UI
+# Streamlit UI
 st.set_page_config("VIVEK Flight Price Classifier", layout="wide")
 st.title("✈️ VIVEK'S Flight Price Tracker & Classifier")
 
 tab1, tab2, tab3 = st.tabs(["🔍 Live Flights", "📈 Predict Price", "🧠 Classify Cheaper/Costlier"])
 
+# --- Tab 1: Live Flights ---
 with tab1:
     st.subheader("Search Flights")
     col1, col2, col3 = st.columns(3)
@@ -113,6 +132,7 @@ with tab1:
         else:
             st.warning("No flights found or error occurred.")
 
+# --- Tab 2: Predict Price ---
 with tab2:
     st.subheader("Flight Price Prediction (Linear Regression)")
     col1, col2, col3 = st.columns(3)
@@ -130,8 +150,9 @@ with tab2:
             df["Hour"] = pd.to_datetime(df["Departure Time"]).dt.hour
             df["Day"] = pd.to_datetime(df["Departure Time"]).dt.dayofweek
             df["AirlineCode"] = LabelEncoder().fit_transform(df["Airline"])
+            df["Duration"] = df["Duration_Min"]
 
-            features = ["Hour", "Day", "AirlineCode"]
+            features = ["Hour", "Day", "Duration", "AirlineCode"]
             X = df[features]
             y = df["Price"]
 
@@ -155,6 +176,7 @@ with tab2:
         else:
             st.warning("No flights found.")
 
+# --- Tab 3: Classification ---
 with tab3:
     st.subheader("✈️ Flight Classification: Cheaper or Costlier")
     col1, col2, col3 = st.columns(3)
@@ -166,8 +188,6 @@ with tab3:
         flight_date3 = st.date_input("Departure Date", datetime.today()+ timedelta(days=1), key="date3")
 
     future_days = st.slider("Select number of future days to Predict:", 1, 90, 30)
-
-    #future_days = st.slider("Select number of future days to simulate:", 1, 35, 3)
 
     if st.button("Classify Flights", key="classify3"):
         flights3 = get_flight_data(city_codes[from_city3], city_codes[to_city3], flight_date3)
@@ -184,11 +204,8 @@ with tab3:
 
             df_class["Hour"] = pd.to_datetime(df_class["Departure Time"]).dt.hour
             df_class["Day"] = pd.to_datetime(df_class["Departure Time"]).dt.dayofweek
-
-            # Calculate duration in minutes
-            df_class["Duration"] = (pd.to_datetime(df_class["Arrival Time"]) - pd.to_datetime(df_class["Departure Time"])).dt.total_seconds() / 60.0
+            df_class["Duration"] = df_class["Duration_Min"]
             df_class["AirlineCode"] = LabelEncoder().fit_transform(df_class["Airline"])
-            # Classification label based on median price
             price_threshold = df_class["Price"].median()
             df_class["Class"] = (df_class["Price"] > price_threshold).astype(int)
 
@@ -198,34 +215,32 @@ with tab3:
             X_cls = df_class[features]
             y_cls = df_class["Class"]
 
-            # Train-test split
             X_train_cls, X_test_cls, y_train_cls, y_test_cls = train_test_split(X_cls, y_cls, test_size=0.25, random_state=42)
 
-            # Standard scaling only for numeric features
             scaler = StandardScaler()
             X_train_scaled = scaler.fit_transform(X_train_cls)
             X_test_scaled = scaler.transform(X_test_cls)
 
-            # Train logistic regression
             clf = LogisticRegression()
             clf.fit(X_train_scaled, y_train_cls)
             y_pred_cls = clf.predict(X_test_scaled)
+            
 
-            # Evaluation
+            df_class["Duration_Display"] = df_class["Duration"].apply(lambda x: f"{int(x//60)}h {int(x%60)}m")
+
             test_results = df_class.iloc[y_test_cls.index].copy()
             test_results["Predicted"] = y_pred_cls
             test_results["Classification"] = test_results["Predicted"].map({0: "Cheaper", 1: "Costlier"})
             test_results["Flight Date"] = pd.to_datetime(test_results["Departure Time"]).dt.date
-
-            # Validation check
             test_results["Expected Class"] = (test_results["Price"] > price_threshold).map({True: "Costlier", False: "Cheaper"})
             test_results["Correct"] = test_results["Classification"] == test_results["Expected Class"]
             incorrect = test_results[~test_results["Correct"]]
 
-            # Formatted performance metrics
+            # Metrics
             accuracy = accuracy_score(y_test_cls, y_pred_cls) * 100
             class_report = classification_report(y_test_cls, y_pred_cls, target_names=["Cheaper", "Costlier"], output_dict=True)
             cm = confusion_matrix(y_test_cls, y_pred_cls)
+
             st.markdown("### 📊 Performance Metrics")
             st.markdown(f"""
             - **Accuracy**: {accuracy:.2f}%
@@ -235,27 +250,23 @@ with tab3:
             - **Precision (Costlier)**: {class_report['Costlier']['precision']:.3f}
             - **Recall (Costlier)**: {class_report['Costlier']['recall']:.3f}
             - **F1-Score (Costlier)**: {class_report['Costlier']['f1-score']:.3f}
-            - **Confusion Matrix**:
-              - True Negatives (Cheaper, Cheaper): {cm[0][0]}
-              - False Positives (Cheaper, Costlier): {cm[0][1]}
-              - False Negatives (Costlier, Cheaper): {cm[1][0]}
-              - True Positives (Costlier, Costlier): {cm[1][1]}
             """)
+            
+          
             st.markdown("### 🔍 Feature Weights (Scaled Features)")
             st.table(pd.DataFrame({"Feature": features, "Weight": clf.coef_[0]}))
 
             st.markdown("### 📁 Sample Classified Flights")
-            st.dataframe(test_results[["Airline", "Flight Date", "Departure Time", "Arrival Time", "Price", "Classification"]])
+            st.dataframe(test_results[["Airline", "Flight Date", "Departure Time", "Arrival Time","Duration_Display", "Price", "Classification"]])
 
             st.markdown("### 🧪 Misclassified Flights")
             if incorrect.empty:
                 st.success("✅ All classified flights match the median price logic.")
             else:
                 st.warning(f"⚠️ {len(incorrect)} flights misclassified.")
-                st.dataframe(incorrect[["Airline", "Departure Time", "Price", "Classification", "Expected Class"]])
+                st.dataframe(incorrect[["Airline", "Flight Date", "Departure Time", "Arrival Time","Duration_Display", "Price", "Classification", "Expected Class"]])
 
             st.markdown("### 🧮 Confusion Matrix")
-            cm = confusion_matrix(y_test_cls, y_pred_cls)
             fig_cm, ax_cm = plt.subplots()
             sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=["Cheaper", "Costlier"], yticklabels=["Cheaper", "Costlier"])
             ax_cm.set_xlabel("Predicted")
@@ -274,6 +285,8 @@ with tab3:
             ax.legend()
             ax.yaxis.set_major_formatter(mtick.FuncFormatter(lambda x, _: f"₹{int(x):,}"))
             st.pyplot(fig)
+        
         else:
             st.warning("No flights found.")
-
+        
+        
