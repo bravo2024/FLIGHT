@@ -225,7 +225,7 @@ with tab3:
             X_train_scaled = scaler.fit_transform(X_train_cls)
             X_test_scaled = scaler.transform(X_test_cls)
 
-            clf = LogisticRegression(max_iter=1000)
+            clf = LogisticRegression(C=0.1,penalty="l1",solver="liblinear",max_iter=1000)
             clf.fit(X_train_scaled, y_train_cls)
             y_pred_cls = clf.predict(X_test_scaled)
             y_pred_proba = clf.predict_proba(X_test_scaled)[:, 1]
@@ -244,7 +244,7 @@ with tab3:
             accuracy = accuracy_score(y_test_cls, y_pred_cls) * 100
             class_report = classification_report(y_test_cls, y_pred_cls, target_names=["Cheaper", "Costlier"], output_dict=True)
             cm = confusion_matrix(y_test_cls, y_pred_cls)
-            logloss = log_loss(y_test_cls, y_pred_proba)
+            logloss = log_loss(y_test_cls, clf.predict_proba(X_test_cls)
             fpr, tpr, _ = roc_curve(y_test_cls, y_pred_proba)
             auc_score = roc_auc_score(y_test_cls, y_pred_proba)
 
