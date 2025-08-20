@@ -216,7 +216,7 @@ with tab3:
 
             # Features after encoding
             features = ["Hour", "Day", "Duration"] + [col for col in df_class.columns if col.startswith("Airline_")]
-            X_cls = df_class[features]
+            X_cls = pd.get_dummies(df_class[["Hour", "Day", "Duration", "Airline"]], drop_first=True) #df_class[features]
             y_cls = df_class["Class"]
 
             X_train_cls, X_test_cls, y_train_cls, y_test_cls = train_test_split(X_cls, y_cls, test_size=0.25, random_state=42)
@@ -272,11 +272,9 @@ with tab3:
             st.pyplot(fig_roc)
             st.markdown("### 🔍 Feature Weights (Scaled Features)")
             #st.table(pd.DataFrame({"Feature": features, "Weight": clf.coef_[0]}))
-            st.table(pd.DataFrame({
-    "Feature": X_cls.columns,
-    "Weight": clf.coef_[0]
-}))
+            st.table(pd.DataFrame({"Feature": X_cls.columns,"Weight": clf.coef_[0]}))
 
+            
             st.markdown("### 📁 Sample Classified Flights")
             st.dataframe(test_results[["Airline", "Flight Date", "Departure Time", "Arrival Time","Duration_Display", "Price", "Classification"]])
 
