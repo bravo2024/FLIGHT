@@ -267,7 +267,7 @@ with tab3:
             - **Cross-Entropy (Manual)**: {cross_entropy:.4f}  
             - **Log Loss (sklearn)**: {log_loss(y_test_cls, y_pred_proba):.4f}   
             - **ROC-AUC Score**: {roc_auc_score(y_test_cls, y_pred_proba):.4f}  
-            - **PR-AUC Score**: {average_precision_score(y_test_cls, y_pred_proba):.4f}  
+     
             """)
             # # --- Extra Performance Metrics ---
             # from sklearn.metrics import matthews_corrcoef
