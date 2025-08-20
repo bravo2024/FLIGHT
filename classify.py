@@ -236,7 +236,7 @@ with tab3:
             test_results["Predicted"] = y_pred_cls
             test_results["Classification"] = test_results["Predicted"].map({0: "Cheaper", 1: "Costlier"})
             test_results["Flight Date"] = pd.to_datetime(test_results["Departure Time"]).dt.date
-            test_results["Expected Class"] = test_results["Class"].map({1: "Costlier", 0: "Cheaper"})
+            test_results["Expected Class"] = (test_results["Price"] > price_threshold).map({1: "Costlier", 0: "Cheaper"})
             test_results["Correct"] = test_results["Classification"] == test_results["Expected Class"]
             incorrect = test_results[~test_results["Correct"]]
 
