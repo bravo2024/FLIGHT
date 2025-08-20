@@ -112,7 +112,7 @@ with tab1:
     with col2:
         to_city = st.selectbox("To", list(city_codes.keys()), index=1, key="to1")
     with col3:
-        flight_date = st.date_input("Departure Date", datetime.today(), key="date1")
+        flight_date = st.date_input("Departure Date", datetime.today()+ timedelta(days=1), key="date1")
 
     if st.button("Search Flights", key="search1"):
         flights = get_flight_data(city_codes[from_city], city_codes[to_city], flight_date)
@@ -142,7 +142,7 @@ with tab2:
     with col2:
         to_city2 = st.selectbox("To", list(city_codes.keys()), index=1, key="to2")
     with col3:
-        flight_date2 = st.date_input("Departure Date", datetime.today(), key="date2")
+        flight_date2 = st.date_input("Departure Date", datetime.today()+ timedelta(days=1), key="date2")
 
     if st.button("Predict Prices", key="predict2"):
         flights2 = get_flight_data(city_codes[from_city2], city_codes[to_city2], flight_date2)
