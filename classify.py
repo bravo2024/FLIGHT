@@ -270,14 +270,29 @@ with tab3:
             ax_roc.set_title("ROC Curve")
             ax_roc.legend()
             st.pyplot(fig_roc)
+            st.markdown("### 🔍 Feature Weights (Scaled Features)")
+            #st.table(pd.DataFrame({"Feature": features, "Weight": clf.coef_[0]}))
+            st.table(pd.DataFrame({
+    "Feature": X_cls.columns,
+    "Weight": clf.coef_[0]
+}))
 
+            st.markdown("### 📁 Sample Classified Flights")
+            st.dataframe(test_results[["Airline", "Flight Date", "Departure Time", "Arrival Time","Duration_Display", "Price", "Classification"]])
+
+            st.markdown("### 🧪 Misclassified Flights")
+            if incorrect.empty:
+                st.success("✅ All classified flights match the median price logic.")
+            else:
+                st.warning(f"⚠️ {len(incorrect)} flights misclassified.")
+                st.dataframe(incorrect[["Airline", "Flight Date", "Departure Time", "Arrival Time","Duration_Display", "Price", "Classification", "Expected Class"]])
             st.markdown("### 🧮 Confusion Matrix")
             fig_cm, ax_cm = plt.subplots()
             sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=["Cheaper", "Costlier"], yticklabels=["Cheaper", "Costlier"])
             ax_cm.set_xlabel("Predicted")
             ax_cm.set_ylabel("Actual")
             st.pyplot(fig_cm)
-
+            
 
             st.markdown("### 📈 Price vs Classification")
             fig, ax = plt.subplots()
