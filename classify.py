@@ -215,7 +215,7 @@ with tab3:
             st.markdown(f"Flights above ₹{price_threshold:.2f} are classified as **Costlier**.")
 
             # Features after encoding
-            features = ["Hour", "Day", "Duration"] + [col for col in df_class.columns if col.startswith("Airline_")]
+            features = ["Hour", "Day", "Duration", "AirlineCode")]
             X_cls = pd.get_dummies(df_class[["Hour", "Day", "Duration", "Airline"]], drop_first=True) #df_class[features]
             y_cls = df_class["Class"]
 
