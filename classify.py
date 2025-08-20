@@ -241,13 +241,7 @@ with tab3:
             incorrect = test_results[~test_results["Correct"]]
 
             # Metrics
-            from sklearn.metrics import (
-                accuracy_score, classification_report, confusion_matrix,
-                precision_score, recall_score, f1_score, log_loss,
-                roc_auc_score, average_precision_score, roc_curve, precision_recall_curve,
-                brier_score_loss
-            )
-            from sklearn.calibration import calibration_curve
+         
 
             accuracy = accuracy_score(y_test_cls, y_pred_cls) * 100
             class_report = classification_report(y_test_cls, y_pred_cls, target_names=["Cheaper", "Costlier"], output_dict=True)
@@ -258,8 +252,8 @@ with tab3:
                 y_test_cls * np.log(y_pred_proba + 1e-15) + (1 - y_test_cls) * np.log(1 - y_pred_proba + 1e-15)
             )
 
-            # --- Brier Score ---
-            brier = brier_score_loss(y_test_cls, y_pred_proba)
+           
+           
 
             st.markdown("### 📊 Performance Metrics")
             st.markdown(f"""
@@ -271,35 +265,34 @@ with tab3:
             - **Recall (Costlier)**: {class_report['Costlier']['recall']:.3f}  
             - **F1-Score (Costlier)**: {class_report['Costlier']['f1-score']:.3f}  
             - **Cross-Entropy (Manual)**: {cross_entropy:.4f}  
-            - **Log Loss (sklearn)**: {log_loss(y_test_cls, y_pred_proba):.4f}  
-            - **Brier Score Loss**: {brier:.4f}  
+            - **Log Loss (sklearn)**: {log_loss(y_test_cls, y_pred_proba):.4f}   
             - **ROC-AUC Score**: {roc_auc_score(y_test_cls, y_pred_proba):.4f}  
             - **PR-AUC Score**: {average_precision_score(y_test_cls, y_pred_proba):.4f}  
             """)
-            # --- Extra Performance Metrics ---
-            from sklearn.metrics import matthews_corrcoef
-            mcc = matthews_corrcoef(y_test_cls, y_pred_cls)
-            st.write("**Matthews Corr. Coef (MCC):**", round(mcc, 3))
+            # # --- Extra Performance Metrics ---
+            # from sklearn.metrics import matthews_corrcoef
+            # mcc = matthews_corrcoef(y_test_cls, y_pred_cls)
+            # st.write("**Matthews Corr. Coef (MCC):**", round(mcc, 3))
 
-            # --- Cross-Validation ---
-            from sklearn.model_selection import cross_val_score
-            cv_scores = cross_val_score(clf, X_cls, y_cls, cv=5, scoring='f1')
-            st.markdown("### 🔄 Cross-Validation (5-Fold F1 Scores)")
-            st.write("Scores:", cv_scores)
-            st.write("Mean F1 Score:", round(cv_scores.mean(), 3))
+            # # --- Cross-Validation ---
+            # from sklearn.model_selection import cross_val_score
+            # cv_scores = cross_val_score(clf, X_cls, y_cls, cv=5, scoring='f1')
+            # st.markdown("### 🔄 Cross-Validation (5-Fold F1 Scores)")
+            # st.write("Scores:", cv_scores)
+            # st.write("Mean F1 Score:", round(cv_scores.mean(), 3))
 
-            # --- Hyperparameter Tuning (GridSearchCV) ---
-            from sklearn.model_selection import GridSearchCV
-            param_grid = {
-                'C': [0.01, 0.1, 1, 10],
-                'penalty': ['l1', 'l2'],
-                'solver': ['liblinear']
-            }
-            grid = GridSearchCV(LogisticRegression(max_iter=1000), param_grid, cv=5, scoring='f1')
-            grid.fit(X_train_scaled, y_train_cls)
-            st.markdown("### ⚙️ Hyperparameter Tuning")
-            st.write("Best Parameters:", grid.best_params_)
-            st.write("Best CV F1 Score:", round(grid.best_score_, 3))
+            # # --- Hyperparameter Tuning (GridSearchCV) ---
+            # from sklearn.model_selection import GridSearchCV
+            # param_grid = {
+            #     'C': [0.01, 0.1, 1, 10],
+            #     'penalty': ['l1', 'l2'],
+            #     'solver': ['liblinear']
+            # }
+            # grid = GridSearchCV(LogisticRegression(max_iter=1000), param_grid, cv=5, scoring='f1')
+            # grid.fit(X_train_scaled, y_train_cls)
+            # st.markdown("### ⚙️ Hyperparameter Tuning")
+            # st.write("Best Parameters:", grid.best_params_)
+            # st.write("Best CV F1 Score:", round(grid.best_score_, 3))
             st.markdown("### 🔍 Feature Weights (Scaled Features)")
             #st.table(pd.DataFrame({"Feature": features, "Weight": clf.coef_[0]}))
             st.table(pd.DataFrame({
@@ -345,17 +338,7 @@ with tab3:
             ax_pr.legend()
             st.pyplot(fig_pr)
 
-            # --- Calibration Curve ---
-            st.markdown("### 🎯 Calibration Curve (Reliability Diagram)")
-            prob_true, prob_pred = calibration_curve(y_test_cls, y_pred_proba, n_bins=10)
-            fig_cal, ax_cal = plt.subplots(figsize=(6,6))
-            ax_cal.plot(prob_pred, prob_true, marker='o', label='Logistic Regression')
-            ax_cal.plot([0, 1], [0, 1], linestyle='--', color='gray', label='Perfectly Calibrated')
-            ax_cal.set_xlabel("Predicted Probability")
-            ax_cal.set_ylabel("True Probability")
-            ax_cal.set_title("Calibration Curve")
-            ax_cal.legend()
-            st.pyplot(fig_cal)
+            
 
             st.markdown("### 📈 Price vs Classification")
             fig, ax = plt.subplots()
