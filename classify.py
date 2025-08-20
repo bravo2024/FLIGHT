@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import mean_absolute_error, r2_score, accuracy_score, classification_report, confusion_matrix, log_loss, roc_curve, auc, roc_auc_score, precision_recall_curve
+from sklearn.metrics import mean_absolute_error, r2_score, accuracy_score, classification_report, confusion_matrix, log_loss, roc_curve, auc, roc_auc_score, precision_recall_curve,average_precision_score
 import matplotlib.ticker as mtick
 from amadeus import Client
 import os
