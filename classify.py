@@ -181,11 +181,11 @@ with tab3:
     st.subheader("✈️ Flight Classification: Cheaper or Costlier")
     col1, col2, col3 = st.columns(3)
     with col1:
-        from_city3 = st.selectbox("From", list(city_codes.keys()),index=list(city_codes.keys()).index("Kolkata"), key="from3")
+        from_city3 = st.selectbox("From", list(city_codes.keys()), index=list(city_codes.keys()).index("Kolkata"), key="from3")
     with col2:
         to_city3 = st.selectbox("To", list(city_codes.keys()), index=list(city_codes.keys()).index("Bangalore"), key="to3")
     with col3:
-        flight_date3 = st.date_input("Departure Date", datetime.today()+ timedelta(days=1), key="date3")
+        flight_date3 = st.date_input("Departure Date", datetime.today() + timedelta(days=1), key="date3")
 
     future_days = st.slider("Select number of future days to Predict:", 1, 90, 30)
 
@@ -205,13 +205,17 @@ with tab3:
             df_class["Hour"] = pd.to_datetime(df_class["Departure Time"]).dt.hour
             df_class["Day"] = pd.to_datetime(df_class["Departure Time"]).dt.dayofweek
             df_class["Duration"] = df_class["Duration_Min"]
-            df_class["AirlineCode"] = LabelEncoder().fit_transform(df_class["Airline"])
+
+            # ✅ One-Hot Encode Airline
+            df_class = pd.get_dummies(df_class, columns=["Airline"], drop_first=True)
+
             price_threshold = df_class["Price"].median()
             df_class["Class"] = (df_class["Price"] > price_threshold).astype(int)
 
             st.markdown(f"Flights above ₹{price_threshold:.2f} are classified as **Costlier**.")
 
-            features = ["Hour", "Day", "Duration", "AirlineCode"]
+            # Features after encoding
+            features = ["Hour", "Day", "Duration"] + [col for col in df_class.columns if col.startswith("Airline_")]
             X_cls = df_class[features]
             y_cls = df_class["Class"]
 
@@ -221,10 +225,10 @@ with tab3:
             X_train_scaled = scaler.fit_transform(X_train_cls)
             X_test_scaled = scaler.transform(X_test_cls)
 
-            clf = LogisticRegression()
+            clf = LogisticRegression(max_iter=1000)
             clf.fit(X_train_scaled, y_train_cls)
             y_pred_cls = clf.predict(X_test_scaled)
-            
+            y_pred_proba = clf.predict_proba(X_test_scaled)[:, 1]
 
             df_class["Duration_Display"] = df_class["Duration"].apply(lambda x: f"{int(x//60)}h {int(x%60)}m")
 
@@ -232,7 +236,7 @@ with tab3:
             test_results["Predicted"] = y_pred_cls
             test_results["Classification"] = test_results["Predicted"].map({0: "Cheaper", 1: "Costlier"})
             test_results["Flight Date"] = pd.to_datetime(test_results["Departure Time"]).dt.date
-            test_results["Expected Class"] = (test_results["Price"] > price_threshold).map({True: "Costlier", False: "Cheaper"})
+            test_results["Expected Class"] = test_results["Class"].map({1: "Costlier", 0: "Cheaper"})
             test_results["Correct"] = test_results["Classification"] == test_results["Expected Class"]
             incorrect = test_results[~test_results["Correct"]]
 
@@ -240,10 +244,15 @@ with tab3:
             accuracy = accuracy_score(y_test_cls, y_pred_cls) * 100
             class_report = classification_report(y_test_cls, y_pred_cls, target_names=["Cheaper", "Costlier"], output_dict=True)
             cm = confusion_matrix(y_test_cls, y_pred_cls)
+            logloss = log_loss(y_test_cls, y_pred_proba)
+            fpr, tpr, _ = roc_curve(y_test_cls, y_pred_proba)
+            auc_score = roc_auc_score(y_test_cls, y_pred_proba)
 
             st.markdown("### 📊 Performance Metrics")
             st.markdown(f"""
             - **Accuracy**: {accuracy:.2f}%
+            - **Log Loss**: {logloss:.4f}
+            - **AUC Score**: {auc_score:.3f}
             - **Precision (Cheaper)**: {class_report['Cheaper']['precision']:.3f}
             - **Recall (Cheaper)**: {class_report['Cheaper']['recall']:.3f}
             - **F1-Score (Cheaper)**: {class_report['Cheaper']['f1-score']:.3f}
@@ -251,20 +260,16 @@ with tab3:
             - **Recall (Costlier)**: {class_report['Costlier']['recall']:.3f}
             - **F1-Score (Costlier)**: {class_report['Costlier']['f1-score']:.3f}
             """)
-            
-          
-            st.markdown("### 🔍 Feature Weights (Scaled Features)")
-            st.table(pd.DataFrame({"Feature": features, "Weight": clf.coef_[0]}))
 
-            st.markdown("### 📁 Sample Classified Flights")
-            st.dataframe(test_results[["Airline", "Flight Date", "Departure Time", "Arrival Time","Duration_Display", "Price", "Classification"]])
-
-            st.markdown("### 🧪 Misclassified Flights")
-            if incorrect.empty:
-                st.success("✅ All classified flights match the median price logic.")
-            else:
-                st.warning(f"⚠️ {len(incorrect)} flights misclassified.")
-                st.dataframe(incorrect[["Airline", "Flight Date", "Departure Time", "Arrival Time","Duration_Display", "Price", "Classification", "Expected Class"]])
+            st.markdown("### 🧮 ROC Curve")
+            fig_roc, ax_roc = plt.subplots()
+            ax_roc.plot(fpr, tpr, label=f"AUC = {auc_score:.3f}", color="blue")
+            ax_roc.plot([0, 1], [0, 1], "r--")
+            ax_roc.set_xlabel("False Positive Rate")
+            ax_roc.set_ylabel("True Positive Rate")
+            ax_roc.set_title("ROC Curve")
+            ax_roc.legend()
+            st.pyplot(fig_roc)
 
             st.markdown("### 🧮 Confusion Matrix")
             fig_cm, ax_cm = plt.subplots()
@@ -272,6 +277,7 @@ with tab3:
             ax_cm.set_xlabel("Predicted")
             ax_cm.set_ylabel("Actual")
             st.pyplot(fig_cm)
+
 
             st.markdown("### 📈 Price vs Classification")
             fig, ax = plt.subplots()
