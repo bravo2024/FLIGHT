@@ -181,11 +181,11 @@ with tab3:
     st.subheader("✈️ Flight Classification: Cheaper or Costlier")
     col1, col2, col3 = st.columns(3)
     with col1:
-        from_city3 = st.selectbox("From", list(city_codes.keys()), index=list(city_codes.keys()).index("Kolkata"), key="from3")
+        from_city3 = st.selectbox("From", list(city_codes.keys()),index=list(city_codes.keys()).index("Kolkata"), key="from3")
     with col2:
         to_city3 = st.selectbox("To", list(city_codes.keys()), index=list(city_codes.keys()).index("Bangalore"), key="to3")
     with col3:
-        flight_date3 = st.date_input("Departure Date", datetime.today() + timedelta(days=1), key="date3")
+        flight_date3 = st.date_input("Departure Date", datetime.today()+ timedelta(days=1), key="date3")
 
     future_days = st.slider("Select number of future days to Predict:", 1, 90, 30)
 
@@ -205,30 +205,29 @@ with tab3:
             df_class["Hour"] = pd.to_datetime(df_class["Departure Time"]).dt.hour
             df_class["Day"] = pd.to_datetime(df_class["Departure Time"]).dt.dayofweek
             df_class["Duration"] = df_class["Duration_Min"]
-
-            # ✅ One-Hot Encode Airline
-            df_class = pd.get_dummies(df_class, columns=["Airline"], drop_first=True)
-
+            #df_class["AirlineCode"] = LabelEncoder().fit_transform(df_class["Airline"])
             price_threshold = df_class["Price"].median()
             df_class["Class"] = (df_class["Price"] > price_threshold).astype(int)
 
             st.markdown(f"Flights above ₹{price_threshold:.2f} are classified as **Costlier**.")
 
-            # Features after encoding
             features = ["Hour", "Day", "Duration", "AirlineCode"]
-            X_cls = pd.get_dummies(df_class[["Hour", "Day", "Duration", "Airline"]], drop_first=True) #df_class[features]
+            #X_cls = df_class[features]
+            X_cls = pd.get_dummies(df_class[["Hour", "Day", "Duration", "Airline"]], drop_first=True)
             y_cls = df_class["Class"]
 
-            X_train_cls, X_test_cls, y_train_cls, y_test_cls = train_test_split(X_cls, y_cls, test_size=0.25, random_state=42)
+            X_train_cls, X_test_cls, y_train_cls, y_test_cls = train_test_split(
+                X_cls, y_cls, test_size=0.25, random_state=42
+            )
 
             scaler = StandardScaler()
             X_train_scaled = scaler.fit_transform(X_train_cls)
             X_test_scaled = scaler.transform(X_test_cls)
 
-            clf = LogisticRegression(C=0.1,penalty="l1",solver="liblinear",max_iter=1000)
+            clf = LogisticRegression(C=0.1, penalty="l1", solver="liblinear", max_iter=1000)
             clf.fit(X_train_scaled, y_train_cls)
             y_pred_cls = clf.predict(X_test_scaled)
-            y_pred_proba = clf.predict_proba(X_test_scaled)[:, 1]
+            y_pred_proba = clf.predict_proba(X_test_scaled)[:, 1]   # needed for ROC/PR
 
             df_class["Duration_Display"] = df_class["Duration"].apply(lambda x: f"{int(x//60)}h {int(x%60)}m")
 
@@ -236,45 +235,77 @@ with tab3:
             test_results["Predicted"] = y_pred_cls
             test_results["Classification"] = test_results["Predicted"].map({0: "Cheaper", 1: "Costlier"})
             test_results["Flight Date"] = pd.to_datetime(test_results["Departure Time"]).dt.date
-            test_results["Expected Class"] = (test_results["Price"] > price_threshold).map({1: "Costlier", 0: "Cheaper"})
+            test_results["Expected Class"] = (test_results["Price"] > price_threshold).map({True: "Costlier", False: "Cheaper"})
             test_results["Correct"] = test_results["Classification"] == test_results["Expected Class"]
             incorrect = test_results[~test_results["Correct"]]
 
             # Metrics
+            from sklearn.metrics import (
+                accuracy_score, classification_report, confusion_matrix,
+                precision_score, recall_score, f1_score, log_loss,
+                roc_auc_score, average_precision_score, roc_curve, precision_recall_curve,
+                brier_score_loss
+            )
+            from sklearn.calibration import calibration_curve
+
             accuracy = accuracy_score(y_test_cls, y_pred_cls) * 100
             class_report = classification_report(y_test_cls, y_pred_cls, target_names=["Cheaper", "Costlier"], output_dict=True)
             cm = confusion_matrix(y_test_cls, y_pred_cls)
-            logloss = log_loss(y_test_cls, y_pred_proba)
-            fpr, tpr, _ = roc_curve(y_test_cls, y_pred_proba)
-            auc_score = roc_auc_score(y_test_cls, y_pred_proba)
+
+            # --- Cross-Entropy (Manual) ---
+            cross_entropy = -np.mean(
+                y_test_cls * np.log(y_pred_proba + 1e-15) + (1 - y_test_cls) * np.log(1 - y_pred_proba + 1e-15)
+            )
+
+            # --- Brier Score ---
+            brier = brier_score_loss(y_test_cls, y_pred_proba)
 
             st.markdown("### 📊 Performance Metrics")
             st.markdown(f"""
-            - **Accuracy**: {accuracy:.2f}%
-            - **Log Loss**: {logloss:.4f}
-            - **AUC Score**: {auc_score:.3f}
-            - **Precision (Cheaper)**: {class_report['Cheaper']['precision']:.3f}
-            - **Recall (Cheaper)**: {class_report['Cheaper']['recall']:.3f}
-            - **F1-Score (Cheaper)**: {class_report['Cheaper']['f1-score']:.3f}
-            - **Precision (Costlier)**: {class_report['Costlier']['precision']:.3f}
-            - **Recall (Costlier)**: {class_report['Costlier']['recall']:.3f}
-            - **F1-Score (Costlier)**: {class_report['Costlier']['f1-score']:.3f}
+            - **Accuracy**: {accuracy:.2f}%  
+            - **Precision (Cheaper)**: {class_report['Cheaper']['precision']:.3f}  
+            - **Recall (Cheaper)**: {class_report['Cheaper']['recall']:.3f}  
+            - **F1-Score (Cheaper)**: {class_report['Cheaper']['f1-score']:.3f}  
+            - **Precision (Costlier)**: {class_report['Costlier']['precision']:.3f}  
+            - **Recall (Costlier)**: {class_report['Costlier']['recall']:.3f}  
+            - **F1-Score (Costlier)**: {class_report['Costlier']['f1-score']:.3f}  
+            - **Cross-Entropy (Manual)**: {cross_entropy:.4f}  
+            - **Log Loss (sklearn)**: {log_loss(y_test_cls, y_pred_proba):.4f}  
+            - **Brier Score Loss**: {brier:.4f}  
+            - **ROC-AUC Score**: {roc_auc_score(y_test_cls, y_pred_proba):.4f}  
+            - **PR-AUC Score**: {average_precision_score(y_test_cls, y_pred_proba):.4f}  
             """)
+            # --- Extra Performance Metrics ---
+            from sklearn.metrics import matthews_corrcoef
+            mcc = matthews_corrcoef(y_test_cls, y_pred_cls)
+            st.write("**Matthews Corr. Coef (MCC):**", round(mcc, 3))
 
-            st.markdown("### 🧮 ROC Curve")
-            fig_roc, ax_roc = plt.subplots()
-            ax_roc.plot(fpr, tpr, label=f"AUC = {auc_score:.3f}", color="blue")
-            ax_roc.plot([0, 1], [0, 1], "r--")
-            ax_roc.set_xlabel("False Positive Rate")
-            ax_roc.set_ylabel("True Positive Rate")
-            ax_roc.set_title("ROC Curve")
-            ax_roc.legend()
-            st.pyplot(fig_roc)
+            # --- Cross-Validation ---
+            from sklearn.model_selection import cross_val_score
+            cv_scores = cross_val_score(clf, X_cls, y_cls, cv=5, scoring='f1')
+            st.markdown("### 🔄 Cross-Validation (5-Fold F1 Scores)")
+            st.write("Scores:", cv_scores)
+            st.write("Mean F1 Score:", round(cv_scores.mean(), 3))
+
+            # --- Hyperparameter Tuning (GridSearchCV) ---
+            from sklearn.model_selection import GridSearchCV
+            param_grid = {
+                'C': [0.01, 0.1, 1, 10],
+                'penalty': ['l1', 'l2'],
+                'solver': ['liblinear']
+            }
+            grid = GridSearchCV(LogisticRegression(max_iter=1000), param_grid, cv=5, scoring='f1')
+            grid.fit(X_train_scaled, y_train_cls)
+            st.markdown("### ⚙️ Hyperparameter Tuning")
+            st.write("Best Parameters:", grid.best_params_)
+            st.write("Best CV F1 Score:", round(grid.best_score_, 3))
             st.markdown("### 🔍 Feature Weights (Scaled Features)")
             #st.table(pd.DataFrame({"Feature": features, "Weight": clf.coef_[0]}))
-            st.table(pd.DataFrame({"Feature": X_cls.columns,"Weight": clf.coef_[0]}))
+            st.table(pd.DataFrame({
+    "Feature": X_cls.columns,
+    "Weight": clf.coef_[0]
+}))
 
-            
             st.markdown("### 📁 Sample Classified Flights")
             st.dataframe(test_results[["Airline", "Flight Date", "Departure Time", "Arrival Time","Duration_Display", "Price", "Classification"]])
 
@@ -284,13 +315,46 @@ with tab3:
             else:
                 st.warning(f"⚠️ {len(incorrect)} flights misclassified.")
                 st.dataframe(incorrect[["Airline", "Flight Date", "Departure Time", "Arrival Time","Duration_Display", "Price", "Classification", "Expected Class"]])
+
             st.markdown("### 🧮 Confusion Matrix")
             fig_cm, ax_cm = plt.subplots()
             sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=["Cheaper", "Costlier"], yticklabels=["Cheaper", "Costlier"])
             ax_cm.set_xlabel("Predicted")
             ax_cm.set_ylabel("Actual")
             st.pyplot(fig_cm)
-            
+
+            # --- ROC Curve ---
+            st.markdown("### 📈 ROC Curve")
+            fpr, tpr, _ = roc_curve(y_test_cls, y_pred_proba)
+            fig_roc, ax_roc = plt.subplots()
+            ax_roc.plot(fpr, tpr, label=f"ROC AUC = {roc_auc_score(y_test_cls, y_pred_proba):.2f}", color="blue")
+            ax_roc.plot([0, 1], [0, 1], linestyle="--", color="red")
+            ax_roc.set_xlabel("False Positive Rate")
+            ax_roc.set_ylabel("True Positive Rate")
+            ax_roc.legend()
+            st.pyplot(fig_roc)
+
+            # --- Precision-Recall Curve ---
+            st.markdown("### 📉 Precision-Recall Curve")
+            precision_vals, recall_vals, _ = precision_recall_curve(y_test_cls, y_pred_proba)
+            fig_pr, ax_pr = plt.subplots()
+            ax_pr.plot(recall_vals, precision_vals, label=f"PR AUC = {average_precision_score(y_test_cls, y_pred_proba):.2f}", color="green")
+            ax_pr.set_xlabel("Recall")
+            ax_pr.set_ylabel("Precision")
+            ax_pr.legend()
+            st.pyplot(fig_pr)
+
+            # --- Calibration Curve ---
+            st.markdown("### 🎯 Calibration Curve (Reliability Diagram)")
+            prob_true, prob_pred = calibration_curve(y_test_cls, y_pred_proba, n_bins=10)
+            fig_cal, ax_cal = plt.subplots(figsize=(6,6))
+            ax_cal.plot(prob_pred, prob_true, marker='o', label='Logistic Regression')
+            ax_cal.plot([0, 1], [0, 1], linestyle='--', color='gray', label='Perfectly Calibrated')
+            ax_cal.set_xlabel("Predicted Probability")
+            ax_cal.set_ylabel("True Probability")
+            ax_cal.set_title("Calibration Curve")
+            ax_cal.legend()
+            st.pyplot(fig_cal)
 
             st.markdown("### 📈 Price vs Classification")
             fig, ax = plt.subplots()
@@ -307,5 +371,6 @@ with tab3:
         
         else:
             st.warning("No flights found.")
+
         
         
